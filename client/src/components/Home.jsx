@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import '@google/model-viewer/dist/model-viewer.min.js';
+import RotatingRobot from "./RotatingRobo";
 
 
 // Hero Section
@@ -46,23 +46,7 @@ const Hero = () => {
       🔆 AI-Powered Sign Language Platform
     </p>
 
-    {/* 3D Robot in Circle */}
-    <div className="flex justify-center mb-8 relative z-10">
-      <div className="relative w-64 h-64 rounded-full overflow-hidden shadow-lg bg-transparent border-4 border-teal-400 robot-circle">
-        <iframe
-  title="Smiling Robot Waving"
-  frameBorder="0"
-  allowFullScreen
-  mozallowfullscreen="true"
-  webkitallowfullscreen="true"
-  allow="autoplay; fullscreen; xr-spatial-tracking"
-  src="https://sketchfab.com/models/0af7e769873d46a68713c34247930ec1/embed?autostart=1&preload=1&ui_hint=0&ui_infos=0&ui_stop=0&ui_watermark=0&ui_controls=0&transparent=1&camera=0&animation=run&spin=1"
-  className="absolute top-0 left-0 w-full h-full scale-110"
-  style={{ transformOrigin: "center" }}
-></iframe>
-
-      </div>
-    </div>
+<RotatingRobot motion="wave" speed={0.03} amplitude={0.4} />
 
     {/* Main Title */}
     <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 mb-6 floating-element relative z-10">
