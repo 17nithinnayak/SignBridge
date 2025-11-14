@@ -9,7 +9,6 @@ import AuthPage from "./components/AuthPage.jsx";
 import LearningCatagory from "./components/LearningCatagory.jsx";
 import LearningModule from "./components/LearningModule.jsx"; 
 import LearningProfile from "./components/LearningProfile.jsx"; 
-import Community from "./components/Community.jsx";
 import Convert from "./components/Convert.jsx";
 import SignLanguageDictionary from "./components/signLearner.jsx";
 import BasicLevel from "./components/learningBasic.jsx";
@@ -28,7 +27,6 @@ const App = () => {
     <Route path="/learning/profile" element={<LearningProfile />} />
     <Route path="/isl-recognition" element={<ISLRecognition />} />
     <Route path="/practice" element={<PracticeHub />} />
-    <Route path="/community" element={<Community />} />
         <Route path="/convert" element={<Convert />} />
                 <Route path="/learner" element={<SignLanguageDictionary/>} />
                 <Route path="/learner/basic" element={<BasicLevel />} />

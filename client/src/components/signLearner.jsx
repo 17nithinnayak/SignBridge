@@ -180,7 +180,7 @@ const LearningLevels = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center font-sans p-6 space-y-8">
       <div className="text-center mb-12">
-        <h1 className="text-5xl font-extrabold mb-4 text-blue-400">
+        <h1 className="text-4xl font-extrabold mb-4 text-teal-600">
           Choose Your Learning Level
         </h1>
         <p className="text-lg text-gray-500 max-w-xl mx-auto">

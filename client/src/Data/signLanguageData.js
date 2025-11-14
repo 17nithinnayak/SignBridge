@@ -8,13 +8,13 @@ const signLanguageData = {
     "Greetings": [
         { 
             "id": "General-0", 
-            "title": "DEAF Wishes A Healthy Wealthy Life!", 
+            "title": " Wishes", 
             "videoId": "7_1qPBn86A0", 
             "thumbnail": "https://i.ytimg.com/vi/7_1qPBn86A0/default.jpg" 
         },
         { 
             "id": "General-1", 
-            "title": "Happy Ambedkar Jayanti || DEF", 
+            "title": "wish", 
             "videoId": "yQuaEdnfR0s", 
             "thumbnail": "https://i.ytimg.com/vi/yQuaEdnfR0s/default.jpg" 
         },
