@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "SignBridge - Player",
+  "version": "1.0",
+  "description": "Floating player + audio capture for SignBridge",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "SignBridge"
+  },
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabCapture",
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://meet.google.com/*",
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*", "*://meet.google.com/*", "<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
+  "icons": {
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["*.mp4", "*.webm"],
+      "matches": ["<all_urls>"]
+    }
+   ]
+}
