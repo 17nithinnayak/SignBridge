@@ -1,39 +1,27 @@
 {
   "manifest_version": 3,
-  "name": "SignBridge - Player",
+  "name": "ISL Live Translator",
   "version": "1.0",
-  "description": "Floating player + audio capture for SignBridge",
-  "action": {
-    "default_popup": "popup.html",
-    "default_title": "SignBridge"
-  },
+  "description": "Captures tab audio, sends to an API, and displays ISL video translations.",
   "permissions": [
-    "activeTab",
-    "scripting",
-    "tabCapture",
-    "storage"
+    "storage",      
+    "activeTab",    
+    "tabCapture",   
+    "scripting"     
   ],
   "host_permissions": [
-    "*://*.youtube.com/*",
-    "*://meet.google.com/*",
-    "<all_urls>"
+    "https://signbridgebackend-g6zh.onrender.com/"
   ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "128": "images/icon128.png"
+    }
+  },
   "background": {
     "service_worker": "background.js"
   },
-  "content_scripts": [
-    {
-      "matches": ["*://*.youtube.com/*", "*://meet.google.com/*", "<all_urls>"],
-      "js": ["content.js"]
-    }
-  ],
   "icons": {
-    "128": "icons/icon128.png"
-  },
-  "web_accessible_resources": [
-    {
-      "resources": ["*.mp4", "*.webm"],
-      "matches": ["<all_urls>"]
-    }
-   ]
+    "128": "images/icon128.png"
+  }
 }

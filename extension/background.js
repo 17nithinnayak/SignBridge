@@ -1,100 +1,52 @@
-// background.js (service worker)
-let mediaRecorder = null;
-let socket = null;
-let captureStream = null;
+// background.js
 
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg.type === 'START_CAPTURE') {
-    startCapture(sendResponse);
-    // return true to indicate async response
-    return true;
-  } else if (msg.type === 'STOP_CAPTURE') {
-    stopCapture();
-    sendResponse({ok:true});
+const BACKEND_HTTP_URL = "https://signbridgebackend-g6zh.onrender.com/api/translate-text";
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "translateText") {
+    translateText(message.text);
+    return true; // Indicate async response
   }
 });
 
-async function startCapture(sendResponse) {
+async function translateText(textToTranslate) {
+  console.log("Translating text:", textToTranslate);
+
   try {
-    // Start tab audio capture
-    chrome.tabCapture.capture({audio: true, video: false}, (stream) => {
-      if (!stream) {
-        sendResponse({ok:false, error: 'tabCapture failed: ' + chrome.runtime.lastError});
-        return;
-      }
-      captureStream = stream;
-
-      // create MediaRecorder (audio/webm)
-      try {
-        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-      } catch (e) {
-        console.error('MediaRecorder creation failed', e);
-        sendResponse({ok:false, error: e.toString()});
-        return;
-      }
-
-      // Ensure websocket connection to backend
-      // Replace with your backend WS URL
-      socket = new WebSocket('wss://nithins-backend.com/ws/translate');
-
-      socket.onopen = () => {
-        console.log('Socket open');
-        mediaRecorder.start(1000); // emit dataavailable every 1000ms
-        sendResponse({ok:true});
-      };
-
-      socket.onerror = (err) => {
-        console.error('Socket error', err);
-      };
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (socket && socket.readyState === WebSocket.OPEN) {
-          // send raw blob - backend must handle binary
-          socket.send(e.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        if (stream) {
-          // stop tracks
-          stream.getTracks().forEach(t => t.stop());
-        }
-      };
-
+    const response = await fetch(BACKEND_HTTP_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ text: textToTranslate })
     });
-  } catch (err) {
-    console.error(err);
-    sendResponse({ok:false, error: err.toString()});
+
+    if (!response.ok) {
+      throw new Error(`Backend error: ${response.statusText}`);
+    }
+
+    const data = await response.json(); // Expects {"urls": ["url1", "url2"]}
+
+    if (data.urls && data.urls.length > 0) {
+      // Find the active tab and send it the URLs
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab) {
+        // Inject content.js if it's not already there
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["content.js"]
+        });
+        
+        // Send each URL to the content script
+        for (const url of data.urls) {
+          chrome.tabs.sendMessage(tab.id, {
+            type: 'ENQUEUE_VIDEO',
+            url: url
+          });
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Translation failed:", e);
   }
 }
-
-function stopCapture() {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop();
-  }
-  if (captureStream) {
-    captureStream.getTracks().forEach(t => t.stop());
-    captureStream = null;
-  }
-  if (socket) {
-    try { socket.close(); } catch(e) {}
-    socket = null;
-  }
-}
-
-chrome.runtime.onInstalled.addListener(() => {
-  console.log("✅ SignBridge Extension Installed");
-});
-
-
-
-// chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-//   if (msg.action === "startDemo") {
-//     chrome.scripting.executeScript({
-//       target: { tabId: sender.tab.id },
-//       files: ["content.js"]
-//     });
-//     sendResponse({ started: true });
-//   }
-// });
-
