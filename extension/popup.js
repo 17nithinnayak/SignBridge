@@ -1,78 +1,83 @@
-const startBtn = document.getElementById('startBtn');
-const stopBtn = document.getElementById('stopBtn');
+const s2iBtn = document.getElementById('s2iBtn');
+const s2iBtnText = document.getElementById('s2iBtn-text');
+const i2sBtn = document.getElementById('i2sBtn');
 const statusDiv = document.getElementById('status');
-const transcriptDiv = document.getElementById('transcript');
 
-// Check for browser support
+// --- 1. Speech-to-ISL (Mic) Logic ---
+
 if (!('webkitSpeechRecognition' in window)) {
-  statusDiv.textContent = "Error: Speech recognition not supported by this browser.";
-  startBtn.disabled = true;
+  statusDiv.textContent = "Error: Speech recognition not supported.";
+  s2iBtn.disabled = true;
 }
 
 const recognition = new webkitSpeechRecognition();
-let final_transcript = '';
-
-recognition.continuous = true; // Keep listening
-recognition.interimResults = true; // Show results as they come in
+recognition.continuous = true;
+recognition.interimResults = true;
 recognition.lang = 'en-US';
 
+let isRecording = false;
+
+// When recognition starts
 recognition.onstart = () => {
-  startBtn.disabled = true;
-  stopBtn.disabled = false;
-  statusDiv.className = 'status recording';
-  statusDiv.textContent = "🎤 Listening... (Please keep this popup open)";
-  
-  // Clear the transcript when starting a new session
-  final_transcript = ''; 
-  transcriptDiv.innerHTML = '';
+  isRecording = true;
+  s2iBtn.classList.add('recording');
+  s2iBtnText.textContent = 'Stop Listening';
+  statusDiv.textContent = "Speech-to-ISL is active";
 };
 
+// When recognition gives an error
 recognition.onerror = (event) => {
-  statusDiv.textContent = 'Error: ' + event.error;
+  statusDiv.textContent = 'Speech Error: ' + event.error;
 };
 
+// When recognition ends (either by stop() or automatically)
 recognition.onend = () => {
-  startBtn.disabled = false;
-  stopBtn.disabled = true;
-  statusDiv.className = 'status disconnected';
-  statusDiv.textContent = "○ Ready to start";
-  
-  // <<< CHANGED >>>
-  // We no longer send the transcript here. It's sent in real-time.
+  isRecording = false;
+  s2iBtn.classList.remove('recording');
+  s2iBtnText.textContent = 'Start Listening';
+  statusDiv.textContent = "Status: Ready";
 };
 
+// When a speech result is received
 recognition.onresult = (event) => {
-  let interim_transcript = '';
-  
   for (let i = event.resultIndex; i < event.results.length; ++i) {
-    let chunk = event.results[i][0].transcript;
-    
     if (event.results[i].isFinal) {
-      final_transcript += chunk + ' '; // Add a space
+      let chunk = event.results[i][0].transcript.trim();
       
-      // <<< CHANGED >>>
-      // Send the finalized chunk to the backend IMMEDIATELY
-      console.log('Sending chunk to backend:', chunk);
-      chrome.runtime.sendMessage({
-        action: "translateText",
-        text: chunk
-      });
-      
-    } else {
-      interim_transcript += chunk;
+      if (chunk) {
+        // Send finalized chunk to the backend
+        console.log('Sending chunk:', chunk);
+        chrome.runtime.sendMessage({
+          action: "translateText",
+          text: chunk
+        });
+      }
     }
   }
-  
-  // Update the UI
-  transcriptDiv.innerHTML = final_transcript + '<span style="color: #999;">' + interim_transcript + '</span>';
-  transcriptDiv.scrollTop = transcriptDiv.scrollHeight; // Auto-scroll
 };
 
-startBtn.addEventListener('click', () => {
-  // All logic is now in onstart
-  recognition.start();
+// --- Button 1: Start/Stop Toggle ---
+s2iBtn.addEventListener('click', () => {
+  if (isRecording) {
+    recognition.stop();
+  } else {
+    try {
+      recognition.start();
+    } catch(e) {
+      console.log("Error starting recognition:", e);
+    }
+  }
 });
 
-stopBtn.addEventListener('click', () => {
-  recognition.stop();
+
+// --- Button 2: ISL-to-Speech (Webcam) Logic ---
+i2sBtn.addEventListener('click', () => {
+  statusDiv.textContent = "Starting ISL-to-Speech...";
+  
+  chrome.runtime.sendMessage({
+    action: "startISLToSpeech"
+  });
+  
+  // Close the popup so the user can see the page
+  window.close();
 });
