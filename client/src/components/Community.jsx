@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import Slider from "react-input-slider";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
@@ -28,19 +27,18 @@ function LearnSign() {
 
     // Scene setup
     ref.scene = new THREE.Scene();
-    ref.scene.background = new THREE.Color(0xeeeeee); // softer background
+    ref.scene.background = new THREE.Color(0xf3f4f6); // light gray
 
-    // ✅ FIXED LIGHTING (this solves your black model issue)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.5); // overall brightness
+    // ✅ Fixed lighting (black model issue solved)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
     ref.scene.add(ambientLight);
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
     directionalLight.position.set(2, 4, 5);
-    directionalLight.castShadow = true;
     ref.scene.add(directionalLight);
 
-    const fillLight = new THREE.DirectionalLight(0xffffff, 0.5);
-    fillLight.position.set(-2, 2, -2);
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    fillLight.position.set(-2, 2, -3);
     ref.scene.add(fillLight);
 
     const backLight = new THREE.DirectionalLight(0xffffff, 0.3);
@@ -126,7 +124,7 @@ function LearnSign() {
   const alphaButtons = Array.from({ length: 26 }, (_, i) => (
     <button
       key={i}
-      className="w-16 h-16 m-2 rounded-lg bg-teal-600 text-white font-bold hover:bg-teal-700 transition"
+      className="w-14 h-14 m-2 rounded-lg bg-teal-600 text-white font-bold hover:bg-teal-700 transition shadow"
       onClick={() => {
         if (ref.animations.length === 0)
           alphabets[String.fromCharCode(i + 65)](ref);
@@ -140,7 +138,7 @@ function LearnSign() {
   const wordButtons = words.wordList.map((word, i) => (
     <button
       key={i}
-      className="px-3 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition m-1"
+      className="px-3 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition m-1 shadow"
       onClick={() => {
         if (ref.animations.length === 0) words[word](ref);
       }}
@@ -150,82 +148,121 @@ function LearnSign() {
   ));
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-gray-100">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-70px)] bg-gray-100">
       {/* Left - Controls */}
-      <div className="w-full lg:w-1/4 p-4 overflow-y-auto bg-white shadow-lg">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">
-          Alphabets
-        </h2>
-        <div className="flex flex-wrap justify-center">{alphaButtons}</div>
+      <div
+  className="w-full lg:w-1/4 p-4 overflow-y-auto bg-white shadow-lg border-r border-gray-200"
+  style={{
+    msOverflowStyle: "none",      // IE + Edge
+    scrollbarWidth: "none",        // Firefox
+  }}
+>
+  <style>
+    {`
+      div::-webkit-scrollbar {
+        display: none;             /* Chrome + Safari */
+      }
+    `}
+  </style>
 
-        <h2 className="text-2xl font-bold text-gray-800 mt-6 mb-4 text-center">
-          Words
-        </h2>
-        <div className="flex flex-wrap justify-center">{wordButtons}</div>
-      </div>
+  <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">
+    Alphabets
+  </h2>
+
+  <div className="flex flex-wrap gap-3 justify-center">
+    {alphaButtons}
+  </div>
+
+  <h2 className="text-2xl font-bold text-gray-800 mt-6 mb-4 text-center">
+    Words
+  </h2>
+
+  <div className="flex flex-wrap gap-3 justify-center">
+    {wordButtons}
+  </div>
+</div>
+
 
       {/* Center - 3D Canvas */}
       <div className="flex-1 flex items-center justify-center bg-gray-200">
-        <div id="canvas" className="w-full h-full flex items-center justify-center" />
+        <div
+          id="canvas"
+          className="w-full h-full flex items-center justify-center"
+        />
       </div>
 
       {/* Right - Settings */}
-      <div className="w-full lg:w-1/5 p-6 bg-white shadow-lg flex flex-col items-center justify-start space-y-6">
+      <div className="w-full lg:w-1/5 p-6 bg-white shadow-lg flex flex-col items-center justify-start space-y-6 border-l border-gray-200">
         <h2 className="text-xl font-bold text-gray-800">Select Avatar</h2>
+
         <div className="flex flex-col items-center space-y-4">
           <img
             src={xbotPic}
             alt="Avatar XBOT"
-            className="w-24 h-24 rounded-full border-4 border-transparent hover:border-teal-500 cursor-pointer bg-white shadow"
+            className="w-24 h-24 rounded-full border-4 border-transparent hover:border-teal-500 cursor-pointer bg-white shadow object-cover"
             onClick={() => setBot(xbot)}
           />
           <img
             src={ybotPic}
             alt="Avatar YBOT"
-            className="w-24 h-24 rounded-full border-4 border-transparent hover:border-indigo-500 cursor-pointer bg-white shadow-md object-cover"
+            className="w-24 h-24 rounded-full border-4 border-transparent hover:border-indigo-500 cursor-pointer bg-white shadow object-cover"
             onClick={() => setBot(ybot)}
           />
         </div>
 
-        <div className="w-full mt-6">
-          <p className="text-sm font-semibold text-gray-700 mb-1">
-            Animation Speed:{" "}
-            <span className="text-teal-600">
-              {Math.round(speed * 100) / 100}
-            </span>
-          </p>
-          <Slider
-            axis="x"
-            x={speed}
-            xmin={0.05}
-            xmax={0.5}
-            step={0.01}
-            onChange={({ x }) => setSpeed(x)}
-            styles={{
-              track: { backgroundColor: "#ccc", height: 6 },
-              active: { backgroundColor: "#14b8a6" },
-              thumb: { width: 16, height: 16 },
-            }}
-          />
-        </div>
+        {/* --- Sliders --- */}
+        <div className="w-full mt-6 space-y-4">
+          {/* Animation Speed */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-sm font-semibold text-gray-700">
+                Animation Speed
+              </p>
+              <p className="text-sm font-medium text-teal-600">
+                {Math.round(speed * 1000) / 1000}
+              </p>
+            </div>
 
-        <div className="w-full">
-          <p className="text-sm font-semibold text-gray-700 mb-1">
-            Pause Time: <span className="text-indigo-600">{pause} ms</span>
-          </p>
-          <Slider
-            axis="x"
-            x={pause}
-            xmin={0}
-            xmax={2000}
-            step={100}
-            onChange={({ x }) => setPause(x)}
-            styles={{
-              track: { backgroundColor: "#ccc", height: 6 },
-              active: { backgroundColor: "#6366f1" },
-              thumb: { width: 16, height: 16 },
-            }}
-          />
+            <input
+              type="range"
+              min={0.05}
+              max={0.5}
+              step={0.01}
+              value={speed}
+              onChange={(e) => setSpeed(parseFloat(e.target.value))}
+              className="w-full h-2 rounded-lg appearance-none bg-gray-200"
+              style={{
+                background: `linear-gradient(90deg, #14b8a6 ${
+                  ((speed - 0.05) / (0.5 - 0.05)) * 100
+                }%, #e5e7eb ${
+                  ((speed - 0.05) / (0.5 - 0.05)) * 100
+                }%)`,
+              }}
+            />
+          </div>
+
+          {/* Pause Time */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-sm font-semibold text-gray-700">Pause Time</p>
+              <p className="text-sm font-medium text-indigo-600">{pause} ms</p>
+            </div>
+
+            <input
+              type="range"
+              min={0}
+              max={2000}
+              step={100}
+              value={pause}
+              onChange={(e) => setPause(Number(e.target.value))}
+              className="w-full h-2 rounded-lg appearance-none bg-gray-200"
+              style={{
+                background: `linear-gradient(90deg, #6366f1 ${
+                  (pause / 2000) * 100
+                }%, #e5e7eb ${(pause / 2000) * 100}%)`,
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>

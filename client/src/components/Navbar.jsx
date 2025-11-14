@@ -37,20 +37,20 @@ const Navbar = () => {
         </li>
         <li>
           <Link
-            to="/learning-hub"
+            to="/learner"
             className="flex items-center gap-2 hover:text-teal-600 transition"
           >
             <BookOpenText size={18} /> Learning Hub
           </Link>
         </li>
-        <li>
+        {/* <li>
           <Link
             to="/video-translator"
             className="flex items-center gap-2 hover:text-teal-600 transition"
           >
             <Video size={18} /> Video Translator
           </Link>
-        </li>
+        </li> */}
         <li>
           <Link
             to="/isl-recognition"
