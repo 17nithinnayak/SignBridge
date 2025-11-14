@@ -1,30 +1,68 @@
-document.getElementById('startBtn').addEventListener('click', () => {
-  chrome.runtime.sendMessage({ type: 'START_CAPTURE' }, (resp) => {
-    document.getElementById('status').innerText = resp && resp.ok ? 'Capturing tab audio...' : 'Failed: ' + (resp && resp.error);
-  });
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
+const statusDiv = document.getElementById('status');
+const transcriptDiv = document.getElementById('transcript');
+
+// Check for browser support
+if (!('webkitSpeechRecognition' in window)) {
+  statusDiv.textContent = "Error: Speech recognition not supported by this browser.";
+  startBtn.disabled = true;
+}
+
+const recognition = new webkitSpeechRecognition();
+let final_transcript = '';
+
+recognition.continuous = true; // Keep listening
+recognition.interimResults = true; // Show results as they come in
+recognition.lang = 'en-US';
+
+recognition.onstart = () => {
+  startBtn.disabled = true;
+  stopBtn.disabled = false;
+  statusDiv.className = 'status recording';
+  statusDiv.textContent = "🎤 Listening... (Please keep this popup open)";
+};
+
+recognition.onerror = (event) => {
+  statusDiv.textContent = 'Error: ' + event.error;
+};
+
+recognition.onend = () => {
+  startBtn.disabled = false;
+  stopBtn.disabled = true;
+  statusDiv.className = 'status disconnected';
+  statusDiv.textContent = "○ Ready to start";
+
+  // When listening stops, send the final transcript for translation
+  if (final_transcript) {
+    statusDiv.textContent = "Sending transcript to backend...";
+    chrome.runtime.sendMessage({
+      action: "translateText",
+      text: final_transcript
+    });
+    final_transcript = ''; // Clear for next time
+  }
+};
+
+recognition.onresult = (event) => {
+  let interim_transcript = '';
+  for (let i = event.resultIndex; i < event.results.length; ++i) {
+    if (event.results[i].isFinal) {
+      final_transcript += event.results[i][0].transcript;
+    } else {
+      interim_transcript += event.results[i][0].transcript;
+    }
+  }
+  // Update the UI
+  transcriptDiv.innerHTML = final_transcript + '<span style="color: #999;">' + interim_transcript + '</span>';
+};
+
+startBtn.addEventListener('click', () => {
+  final_transcript = ''; // Clear previous text
+  transcriptDiv.innerHTML = '';
+  recognition.start();
 });
 
-document.getElementById('stopBtn').addEventListener('click', () => {
-  chrome.runtime.sendMessage({ type: 'STOP_CAPTURE' }, (resp) => {
-    document.getElementById('status').innerText = 'Stopped';
-  });
+stopBtn.addEventListener('click', () => {
+  recognition.stop();
 });
-
-// Enqueue a demo video onto the page via content script
-document.getElementById('enqueueDemo').addEventListener('click', async () => {
-  // Query active tab and post message to content script
-  const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
-  if (!tab) return;
-  // Example demo video URL (same as content.js demo)
-  const url = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm';
-  chrome.tabs.sendMessage(tab.id, { type: 'ENQUEUE_VIDEO', url }, (resp) => {
-    document.getElementById('status').innerText = 'Enqueued demo video';
-  });
-});
-
-
-
-// document.getElementById("startDemo").addEventListener("click", async () => {
-//   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-//   chrome.runtime.sendMessage({ action: "startDemo", tabId: tab.id });
-// });
