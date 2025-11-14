@@ -1,13 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "ISL Live Translator",
-  "version": "1.0",
-  "description": "Captures tab audio, sends to an API, and displays ISL video translations.",
+  "name": "ISL Translator",
+  "version": "1.1",
+  "description": "Handles continuous Speech-to-ISL and placeholder ISL-to-Speech.",
   "permissions": [
-    "storage",      
-    "activeTab",    
-    "tabCapture",   
-    "scripting"     
+    "activeTab",
+    "scripting",
+    "tts" 
   ],
   "host_permissions": [
     "https://signbridgebackend-g6zh.onrender.com/"
