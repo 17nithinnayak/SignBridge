@@ -21,6 +21,10 @@ recognition.onstart = () => {
   stopBtn.disabled = false;
   statusDiv.className = 'status recording';
   statusDiv.textContent = "🎤 Listening... (Please keep this popup open)";
+  
+  // Clear the transcript when starting a new session
+  final_transcript = ''; 
+  transcriptDiv.innerHTML = '';
 };
 
 recognition.onerror = (event) => {
@@ -32,34 +36,40 @@ recognition.onend = () => {
   stopBtn.disabled = true;
   statusDiv.className = 'status disconnected';
   statusDiv.textContent = "○ Ready to start";
-
-  // When listening stops, send the final transcript for translation
-  if (final_transcript) {
-    statusDiv.textContent = "Sending transcript to backend...";
-    chrome.runtime.sendMessage({
-      action: "translateText",
-      text: final_transcript
-    });
-    final_transcript = ''; // Clear for next time
-  }
+  
+  // <<< CHANGED >>>
+  // We no longer send the transcript here. It's sent in real-time.
 };
 
 recognition.onresult = (event) => {
   let interim_transcript = '';
+  
   for (let i = event.resultIndex; i < event.results.length; ++i) {
+    let chunk = event.results[i][0].transcript;
+    
     if (event.results[i].isFinal) {
-      final_transcript += event.results[i][0].transcript;
+      final_transcript += chunk + ' '; // Add a space
+      
+      // <<< CHANGED >>>
+      // Send the finalized chunk to the backend IMMEDIATELY
+      console.log('Sending chunk to backend:', chunk);
+      chrome.runtime.sendMessage({
+        action: "translateText",
+        text: chunk
+      });
+      
     } else {
-      interim_transcript += event.results[i][0].transcript;
+      interim_transcript += chunk;
     }
   }
+  
   // Update the UI
   transcriptDiv.innerHTML = final_transcript + '<span style="color: #999;">' + interim_transcript + '</span>';
+  transcriptDiv.scrollTop = transcriptDiv.scrollHeight; // Auto-scroll
 };
 
 startBtn.addEventListener('click', () => {
-  final_transcript = ''; // Clear previous text
-  transcriptDiv.innerHTML = '';
+  // All logic is now in onstart
   recognition.start();
 });
 

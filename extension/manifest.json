@@ -10,7 +10,7 @@
     "scripting"     
   ],
   "host_permissions": [
-    "<all_urls>" 
+    "https://signbridgebackend-g6zh.onrender.com/"
   ],
   "action": {
     "default_popup": "popup.html",

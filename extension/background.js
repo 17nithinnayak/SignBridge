@@ -1,6 +1,6 @@
 // background.js
 
-const BACKEND_HTTP_URL = "https.signbridgebackend-g6zh.onrender.com/api/translate-text";
+const BACKEND_HTTP_URL = "https://signbridgebackend-g6zh.onrender.com/api/translate-text";
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "translateText") {
