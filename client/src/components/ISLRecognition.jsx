@@ -1,103 +1,165 @@
-import React, { useState } from "react";
-import { Camera, Zap, TrendingUp, Lightbulb } from "lucide-react";
 
-const ISLRecognition = () => {
-  const [cameraEnabled, setCameraEnabled] = useState(false);
 
-  const handleCameraToggle = () => {
-    setCameraEnabled(!cameraEnabled);
+/* eslint-disable no-unused-vars */
+import React, { useEffect, useRef, useState } from "react";
+import * as tf from "@tensorflow/tfjs"; // Use local tfjs
+import * as tmPose from "@teachablemachine/pose"; // Local tmPose if installed via npm
+
+const LOCAL_MODEL_PATH = "/my-pose-model/"; // folder in public folder
+
+export default function ISLPoseModel() {
+  const canvasRef = useRef(null);
+
+  const [loading, setLoading] = useState(true);
+  const [modelReady, setModelReady] = useState(false);
+
+  const [topPrediction, setTopPrediction] = useState(null);
+  const [error, setError] = useState(null);
+
+  const confidenceThreshold = 55;
+
+  useEffect(() => {
+    initModel();
+
+    // Cleanup
+    return () => {
+      if (window.webcam) {
+        window.webcam.stop();
+      }
+    };
+  }, []);
+
+  const initModel = async () => {
+    try {
+      // Load the model and metadata from local folder
+      const modelURL = LOCAL_MODEL_PATH + "model.json";
+      const metadataURL = LOCAL_MODEL_PATH + "metadata.json";
+
+      const model = await tmPose.load(modelURL, metadataURL);
+      window.model = model;
+
+      // Setup webcam
+      const size = 224; // 224x224 input for your model
+      const flip = true;
+
+      const webcam = new tmPose.Webcam(size, size, flip);
+      await webcam.setup();
+      await webcam.play();
+      window.webcam = webcam;
+
+      const canvas = canvasRef.current;
+      canvas.width = size;
+      canvas.height = size;
+      window.ctx = canvas.getContext("2d");
+
+      setLoading(false);
+      setModelReady(true);
+
+      // Start prediction loop
+      window.requestAnimationFrame(loop);
+    } catch (e) {
+      console.error("Error loading model or webcam:", e);
+      setError(
+        "Failed to load model or webcam. Check console and ensure correct file paths."
+      );
+      setLoading(false);
+    }
   };
 
-  const signs = [
-    { label: "Hello", confidence: 95 },
-    { label: "Thank you", confidence: 88 },
-    { label: "Please", confidence: 92 },
-    { label: "Help", confidence: 85 },
-  ];
+  async function loop() {
+    if (window.webcam && window.webcam.canvas) {
+      window.webcam.update();
+      await predict();
+    }
+
+    if (window.model) {
+      window.requestAnimationFrame(loop);
+    }
+  }
+
+  async function predict() {
+    if (!window.model || !window.webcam) return;
+
+    const { pose, posenetOutput } = await window.model.estimatePose(
+      window.webcam.canvas
+    );
+    const prediction = await window.model.predict(posenetOutput);
+
+    const topPred = prediction.reduce((prev, current) => {
+      return prev.probability > current.probability ? prev : current;
+    });
+
+    setTopPrediction(topPred);
+    drawPose(pose);
+  }
+
+  function drawPose(pose) {
+    if (!window.ctx || !window.webcam) return;
+
+    window.ctx.drawImage(window.webcam.canvas, 0, 0);
+
+    if (pose) {
+      const minConfidence = 0.5;
+      tmPose.drawKeypoints(pose.keypoints, minConfidence, window.ctx);
+      tmPose.drawSkeleton(pose.keypoints, minConfidence, window.ctx);
+    }
+  }
+
+  const recognizedName = topPrediction?.className;
+  const recognizedAccuracy = topPrediction
+    ? (topPrediction.probability * 100).toFixed(1)
+    : 0;
 
   return (
-    <div className="px-6 md:px-16 lg:px-32 py-10 bg-[#f8fcfc] min-h-screen">
-      {/* Header */}
-      <div className="text-center mb-10">
-        <div className="inline-flex items-center gap-2 bg-teal-50 text-teal-700 px-4 py-1 rounded-full font-medium text-sm mb-3">
-          <Zap size={16} />
-          AI-Powered Recognition
-        </div>
-        <h1 className="text-4xl font-bold text-teal-700 mb-3">
-          ISL Recognition
-        </h1>
-        <p className="text-gray-600 max-w-2xl mx-auto">
-          Convert your sign language gestures to text in real-time with AI
-          recognition
-        </p>
-      </div>
+    <div className="px-6 py-10 flex flex-col items-center min-h-screen bg-gray-50">
+      <h1 className="text-3xl font-extrabold text-teal-700 mb-6 border-teal-200 pb-2">
+        Real-Time ISL Recognition
+      </h1>
 
-      {/* Camera and Recognition Boxes */}
-      <div className="grid md:grid-cols-2 gap-8 mb-10">
-        {/* Camera Feed */}
-        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 flex flex-col items-center justify-center text-center">
-          {cameraEnabled ? (
-            <div className="w-full h-64 bg-gray-200 flex items-center justify-center rounded-xl">
-              <Camera size={48} className="text-gray-500" />
-              <span className="ml-2 text-gray-600">Camera Feed Active</span>
+      {loading && (
+        <p className="text-lg text-orange-600 font-medium">
+          Loading AI Model, please wait...
+        </p>
+      )}
+
+      {error && (
+        <p className="text-xl text-red-600 font-bold mb-4 bg-red-100 p-3 rounded-lg">
+          {error}
+        </p>
+      )}
+
+      <canvas
+        ref={canvasRef}
+        className="shadow-2xl border-4 border-teal-500/50"
+        style={{
+          width: 300,
+          height: 300,
+          borderRadius: "10px",
+          display: loading || error ? "none" : "block",
+        }}
+      ></canvas>
+
+      <div className="mt-8 w-full max-w-lg bg-white shadow-xl border border-gray-100 p-6 rounded-2xl text-center">
+        <h2 className="text-xl font-semibold text-gray-700 mb-3">
+          Recognized Sign
+        </h2>
+
+        {modelReady && topPrediction ? (
+          recognizedAccuracy >= confidenceThreshold ? (
+            <div className="text-5xl font-extrabold text-teal-600 animate-pulse">
+              {recognizedName}
             </div>
           ) : (
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-12 w-full">
-              <Camera size={48} className="text-teal-500 mb-3 mx-auto" />
-              <p className="text-gray-600 mb-4">Camera is currently disabled</p>
-              <button
-                onClick={handleCameraToggle}
-                className="bg-teal-500 text-white px-6 py-2 rounded-full hover:bg-teal-600 transition"
-              >
-                Enable Camera
-              </button>
+            <div className="text-xl text-gray-400 font-medium p-4">
+              Awaiting clear sign input...
             </div>
-          )}
-        </div>
-
-        {/* Recognized Text */}
-        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 text-center flex flex-col justify-center">
-          <p className="text-gray-500 text-lg">
-            {cameraEnabled
-              ? "Recognition active... (Your gestures will appear as text)"
-              : "Start recognition to see results"}
-          </p>
-        </div>
-      </div>
-
-      {/* Common Signs Detected */}
-      <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-10">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4 text-left">
-          Common Signs Detected
-        </h2>
-        <div className="flex flex-wrap gap-4">
-          {signs.map((sign, idx) => (
-            <div
-              key={idx}
-              className="flex items-center gap-2 bg-teal-50 text-teal-700 px-4 py-2 rounded-xl text-sm font-medium"
-            >
-              <TrendingUp size={16} className="text-teal-600" />
-              {sign.label} — <span className="text-gray-600">{sign.confidence}%</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Tips Section */}
-      <div className="bg-teal-50 border border-teal-100 rounded-2xl p-6">
-        <div className="flex items-center gap-2 mb-3 text-teal-700 font-semibold">
-          <Lightbulb size={18} />
-          Tips for Better Recognition
-        </div>
-        <ul className="list-disc list-inside text-gray-600 text-sm space-y-1 text-left">
-          <li>Ensure good lighting conditions for accurate detection</li>
-          <li>Keep your hands visible within the camera frame</li>
-          <li>Make clear, deliberate signs for better accuracy</li>
-          <li>Use a plain background for improved recognition</li>
-        </ul>
+          )
+        ) : (
+          <div className="text-xl text-gray-400 font-medium p-4">
+            {loading ? "Initializing..." : "Please enable your camera."}
+          </div>
+        )}
       </div>
     </div>
   );
-};
-
-export default ISLRecognition;
+}
